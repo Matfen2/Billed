@@ -17,6 +17,7 @@ import userEvent from "@testing-library/user-event";
 
 jest.mock("../app/store", () => mockStore);
 
+
 describe("Étant donné que je suis connecté en tant qu'employé", () => {
   // [UNIT TEST] - Icon mail highlighting (MM)
   describe("Quand je suis sur la page NewBill", () => {
@@ -163,6 +164,7 @@ describe("Étant donné que je suis connecté en tant qu'employé", () => {
     });
   });
 
+  
    //Test du bon format mais je le test en format png
   describe("quand je télécharge un fichier avec le bon format", () => {
      // Vérifie si un fichier est bien chargé
@@ -207,7 +209,9 @@ describe("Étant donné que je suis connecté en tant qu'employé", () => {
 });
 
 
+
 //test d'intégration POST
+
 describe("Étant donné que je suis connecté en tant qu'employé sur la page NewBill et que je soumets le formulaire", () => {
   beforeEach(() => {
     jest.spyOn(mockStore, "bills");
