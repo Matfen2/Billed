@@ -208,10 +208,7 @@ describe("Étant donné que je suis connecté en tant qu'employé", () => {
   });
 });
 
-
-
 //test d'intégration POST
-
 describe("Étant donné que je suis connecté en tant qu'employé sur la page NewBill et que je soumets le formulaire", () => {
   beforeEach(() => {
     jest.spyOn(mockStore, "bills");
@@ -345,4 +342,82 @@ describe("Étant donné que je suis connecté en tant qu'employé sur la page Ne
       });
     });  
   }); 
+});
+
+// ---------- Intégration : erreurs HTTP 500 ----------
+describe("Quand une erreur API 500 se produit", () => {
+  beforeEach(() => {
+    Object.defineProperty(window, "localStorage", { value: localStorageMock });
+    window.localStorage.setItem("user", JSON.stringify({ type: "Employee", email: "a@a" }));
+    const root = document.createElement("div");
+    root.setAttribute("id", "root");
+    document.body.append(root);
+    router();
+  });
+
+  test("alors l'erreur est loggée lors de l'upload (create)", async () => {
+    // Arrange
+    window.onNavigate(ROUTES_PATH.NewBill);
+    document.body.innerHTML = NewBillUI();
+
+    jest.spyOn(mockStore, "bills").mockImplementationOnce(() => {
+      return {
+        create: () => Promise.reject(new Error("Erreur 500")),
+        update: jest.fn(),
+      };
+    });
+
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+
+    const newBill = new NewBill({
+      document,
+      onNavigate,
+      store: mockStore,
+      localStorage: window.localStorage,
+    });
+
+    // Act : upload d'un fichier correct → déclenche create (mocké en erreur 500)
+    const fileInput = screen.getByTestId("file");
+    const goodFile = new File(["img"], "image.png", { type: "image/png" });
+    fireEvent.change(fileInput, { target: { files: [goodFile] } });
+
+    // Assert
+    await waitFor(() => expect(consoleSpy).toHaveBeenCalled());
+    consoleSpy.mockRestore();
+  });
+
+  test("alors l'erreur est loggée lors de la soumission (update)", async () => {
+    // Arrange
+    window.onNavigate(ROUTES_PATH.NewBill);
+    document.body.innerHTML = NewBillUI();
+
+    jest.spyOn(mockStore, "bills").mockImplementationOnce(() => {
+      return {
+        create: jest.fn(),
+        update: () => Promise.reject(new Error("Erreur 500")),
+      };
+    });
+
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+
+    const onNavigate = (pathname) => (document.body.innerHTML = ROUTES({ pathname }));
+    const newBill = new NewBill({
+      document,
+      onNavigate,
+      store: mockStore,
+      localStorage: window.localStorage,
+    });
+
+    // Préparer une note de frais valide
+    newBill.fileUrl = "https://file.url";
+    newBill.fileName = "justif.png";
+    newBill.billId = "123";
+
+    const form = screen.getByTestId("form-new-bill");
+    fireEvent.submit(form);
+
+    // Assert
+    await waitFor(() => expect(consoleSpy).toHaveBeenCalled());
+    consoleSpy.mockRestore();
+  });
 });
